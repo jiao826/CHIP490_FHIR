@@ -1,0 +1,103 @@
+# HTML
+
+<!DOCTYPE html>
+<html lang="en">
+
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta http-equiv="X-UA-Compatible" content="ie=edge" />
+    <link rel="stylesheet" href="style.css">
+    <script src="https://combinatronics.com/smart-on-fhir/client-js/master/dist/build/fhir-client.js"></script>
+    <script src="script.js"></script>
+    <pre>Patient:</pre>
+    <pre id="patient">Patient Data Loading</pre>
+    <pre>Practitioner:</pre>
+    <pre id="pract">Practitioner Data Loading</pre>
+    <pre>Conditions:</pre>
+    <pre id="condition">Mental Health Data Loading...</pre>
+  </head>
+
+  <body>
+
+  </body>
+
+</html>
+
+
+# JavaScript
+
+const depdx = "http://snomed.info/sct";
+const client = new FHIR.client("https://r3.smarthealthit.org");
+const getPath = client.getPath;
+
+var patid = 'smart-8888802';
+
+
+//Get Patient Information"
+client.request("/Patient/" + patid, {
+    resolveReferences: "patientReference"
+  })
+  .then(data => getPatientDemographics(data))
+  .then(display).catch(display);
+
+function getPatientDemographics(pdemo) {
+return pdemo;
+ // return pdemo.name[0].given.join(" ") + " " + pdemo.name[0].family +
+   // ", Gender: " + pdemo.gender + ", DOB: " + pdemo.birthDate;
+}
+
+client.request(`/Condition?patient=` + patid, {
+  resolveReferences: "conditionReference"
+}).then(data => data.entry.map(item => getConditionName(
+  getPath(item, "resource.code.coding") ||
+  getPath(item, "resource.conditionReference.code.coding")
+))).then(display2, display2);
+
+//Get patient's conditions
+function getConditionName(condCodings = []) {
+  var coding = condCodings.find(c => c.system === depdx);
+  return coding && coding.display || "Unnamed Condition";
+}
+//Get patient's practitioner information **Patient?generalPractitioner
+client.request("/Practitioner/smart-Practitioner-71614502" , {
+			resolveReferences: "practitionerReference"
+  })
+  .then(data => getPractitioner(data))
+  .then(displaypct).catch(displaypct);
+  
+  //Get patient's location
+  
+  //Get patient's encounter information
+//client.request("Location/" , { pageLimit: 0})
+//.then(display2).catch(display2);
+
+  
+
+function getPractitioner(pct) {
+	return pct.name[0].given.join(" ") + " " + pct.name[0].family +
+    " " + pct.name[0].suffix + ", Gender: " + pct.gender + ", DOB: " + pct.birthDate;
+}
+
+function display(data) {
+  var reformdata = JSON.stringify(data);
+  const output = document.getElementById("patient");
+  output.innerText = data instanceof Error ?
+    String(data) : reformdata;
+}
+
+function display2(data) {
+
+  var reformdata = JSON.stringify(data, null, 1).replace('[', '').replace(']', '');
+  const output = document.getElementById("condition");
+  output.innerText = data instanceof Error ?
+    String(data) : reformdata;
+}
+
+function displaypct(data){
+
+  var reformdata = JSON.stringify(data, null, 1).replace('[', '').replace(']', '');
+  const output = document.getElementById("pract");
+  output.innerText = data instanceof Error ?
+    String(data) : reformdata;
+}
